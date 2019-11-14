@@ -23,19 +23,29 @@ localparam  IN_CLK_HZ = 50_000_000;
 localparam  MM_count=IN_CLK_HZ/100;
 
 typedef enum logic[1:0] {SHOW_MM, SHOW_SS} show_t;
-
 show_t show_next, show_state;
+
+typedef enum logic[1:0] {WATCH_TIME, WATCH_SEC} watch_t;
+watch_t watch_next, watch_state;
 
 logic [3:0] time_H_0 = 0;
 logic [3:0] time_H_1 = 0;
 logic [3:0] time_H_2 = 0;
 logic [3:0] time_H_3 = 0;
 
-logic [31:0] count_key_one;
-logic [31:0] count_key_two;
+logic [3:0] H_0 = 0;
+logic [3:0] H_1 = 0;
+logic [3:0] H_2 = 0;
+logic [3:0] H_3 = 0;
+
+logic [31:0] count_key_one = 0;
+logic [31:0] count_key_two = 0;
+
+logic [31:0] COUNT_WATCH = 0;
 
 logic [1:0] Hex_bit    = '0;
 logic       start_stop = '0;
+logic flag_count_wotch = '0;
 
 localparam C_key_one = 200_000_000;
 localparam C_key_two = 200_000_000;
@@ -43,7 +53,7 @@ localparam C_key_two = 200_000_000;
 assign key_one = ~key_one_n;
 assign key_two = ~key_two_n;
 //---------------------------------------------------------------------------------------------------------//
-always_comb begin
+always_comb begin //автомат событий для секундомера 
 	show_next = SHOW_MM;
     case (show_state)
     SHOW_MM:
@@ -56,17 +66,34 @@ always_comb begin
     endcase
 end
 //----------------------------------------------------------------------------------------------------------//
-always_comb begin
+always_comb begin //автомат событий для часов 
+        watch_next = WATCH_TIME;
+        case (watch_state)
+        WATCH_TIME:      
+                if ((key_two)&&(!key_one))
+                    watch_next = WATCH_SEC;
+                else 
+                    watch_next = WATCH_TIME;
+        WATCH_SEC:
+                 if ((key_two)&&(!key_one))
+                    watch_next = WATCH_SEC;
+                else 
+                    watch_next = WATCH_TIME;         
+end
+//----------------------------------------------------------------------------------------------------------//
+always_comb begin //автомат событий для режимов работы
 	mod_next = MOD_WATCH;
     case (mod_state)
         //--------------------------------------------------------------------------------------------------//
     MOD_WATCH:// режим часы
-        if (key_one_cleared && !key_two) // нажимаем на 1 кнопку
+        if (key_one_cleared && !key_two)begin // нажимаем на 1 кнопку
             mod_next = MOD_SETTING;
+            flag_count_wotch = '0;
+            end
         else if ((count_key_one >=C_key_one) && (count_key_two >= C_key_two)) begin // держим (1 и 2) кнопку 
              mod_next = MOD_TIMER; //следующий режим секундомер
-             C_key_one ='0;
-             C_key_two ='0;
+             count_key_one ='0;
+             count_key_two ='0;
              end          
         else mod_next = MOD_WATCH;  //ничего не нажимаем
         //--------------------------------------------------------------------------------------------------//
@@ -74,6 +101,7 @@ always_comb begin
         if ((count_key_one >=C_key_one) && (!key_two) ) begin //держим 1 кнопку 
                   mod_next = MOD_WATCH; //следующий режим - часы
                   C_key_two = '0;
+                  flag_count_wotch = '1; //запускаем внутреннее время часов (COUNT_WATCH)
         end else mod_next = MOD_SETTING; // ничего не нажимаем
         //--------------------------------------------------------------------------------------------------//
     MOD_TIMER:// режим секундомер
@@ -89,30 +117,43 @@ end
 always_ff @(posedge clk )
 	begin
         if (key_one)
-            count_key_one <= count_key_one + 1'b1;            
+            count_key_one <= count_key_one + 1'b1; 
+            else count_key_one <= '0;           
         if (key_two)
             count_key_two <= count_key_two + 1'b1;
+            else count_key_two <= '0;
         
         //--------------------------------------------------//
         case (mod_state)
-        MOD_WATCH:
-                    if ((count_key_two >= C_key_one)&&(!key_one))
-                        //показываем секунды  
+        MOD_WATCH: 
+                    if (flag_count_wotch)
+                        COUNT_WATCH <=  COUNT_WATCH + 1'b1;
+
+                    case(watch_state)
+                    WATCH_TIME:
+                    WATCH_SEC:
+                    default:
+                    endcase 
+                    
+
         //--------------------------------------------------//    
         MOD_SETTING:
                     if ((key_one_cleared) && (!key_two))
                         Hex_bit <= Hex_bit+1;
                else if ((key_two_cleared) && (!key_one))
-                            add_Hex();
+                        add_Hex();
+                    
         //-------------------------------------------------// 
-        MOD_TIMER:
+        MOD_TIMER:       
                     	if ((key_one_cleared) &&(!key_two) begin
                             time_H_3  <= 0;
                             time_H_2  <= 0;
                             time_H_1  <= 0;
                             time_H_0  <= 0;   
                             start_stop <= '0;
-                        end else begin
+                            show_state <= SHOW_MM;
+                        end else show_state <= show_next;
+
                     if ((key_two_cleared) && (!key_one))
                         start_stop <= ~start_stop;
 
@@ -123,14 +164,13 @@ always_ff @(posedge clk )
                     SHOW_MM: SS_MM();
                     SHOW_SS: MM_SS();
                     default: MM_SS();
-                    endcase 
-                                                end      
+                    endcase       
         //------------------------------------------------//                              
-        default: MM_SS();
+        default: mod_state = MOD_WATCH;
         endcase                             
     end
 //-------------------------------------------------------------------------------------------------------//    
-task add_Hex();
+task add_Hex();// +1 к разряду Hex
   case(Hex_bit)
   2'b00:time_H_0 <= time_H_0 + 1'b1;
   2'b01:time_H_1 <= time_H_1 + 1'b1;
@@ -139,53 +179,62 @@ task add_Hex();
   default : Hex_bit <= '0;
   endcase
 endtask :add_Hex
+//--------------------------------------------------------------------------------------------------------//
+task sec_mc_go();//отсчитывает секунды:милисекуныд в часах
+   if (COUNT_WATCH >= MM_count)
+        time_H_0 >=     
+endtask:sec_go
+//--------------------------------------------------------------------------------------------------------//
+task CHCH_MM();//часы : минуты
 
-task SS_MM();
+endtask :CHCH_MM
+//--------------------------------------------------------------------------------------------------------//
+task SS_MM();//секунды : милисекунды
        if (count >= MM_count) begin                        
-            if (time_S >=4'b1001) begin               
-                time_S  <= 4'b0000;
-                if (time_SS >=4'b1001) begin 
-                    time_SS <= 4'b0000;
-                   if (time_M >=4'b1001) begin 
-                       time_M <= 4'b0000;
-                       if (time_MM >=5) begin 
-                           time_MM <= 4'b0000;
-                           time_M  <= 4'b0001;
-                           time_SS <= 4'b0000;
-                           time_S  <= 4'b0000;
+            if (time_H_0 >=4'b1001) begin               
+                time_H_0  <= 4'b0000;
+                if (time_H_1 >=4'b1001) begin 
+                    time_H_1 <= 4'b0000;
+                   if (time_H_2 >=4'b1001) begin 
+                       time_H_2 <= 4'b0000;
+                       if (time_H_3 >=5) begin 
+                           time_H_1  <= 4'b0000;
+                           time_H_0  <= 4'b0000;
+                           time_H_3  <= 4'b0001;
+                           time_H_2  <= 4'b0000;
                        end else 
-                           time_MM <= time_MM +1'b1;
+                           time_H_3 <= time_H_3 +1'b1;
                     end else 
-                        time_M <= time_M +1'b1;
+                        time_H_2 <= time_H_2 +1'b1;
                 end else 
-                    time_SS <= time_SS+4'b0001;
+                    time_H_1 <= time_H_1+4'b0001;
             end else          
-                time_S <= time_S+1'b1;
+                time_H_0 <= time_H_0+1'b1;
             count <= '0;
         end         
     endtask : SS_MM
 //------------------------------------------------------------------------//
-task MM_SS();        
+task MM_SS();//минуты : секунды   
         if (count >= IN_CLK_HZ) begin                        
-            if (time_S==4'b1001) begin               
-                time_S  <= 4'b0000;
-                if (time_SS==4'b0101) begin 
-                    time_SS <= 4'b0000;
-                   if (time_M==4'b1001) begin 
-                       time_M <= 4'b0000;
-                       if (time_MM==4'b0101) begin 
-                           time_MM <= 4'b0000;
-                           time_M  <= 4'b0000;
-                           time_SS <= 4'b0000;
-                           time_M  <= 4'b0000;
+            if (time_H_0==4'b1001) begin               
+                time_H_0  <= 4'b0000;
+                if (time_H_1==4'b0101) begin 
+                    time_H_1 <= 4'b0000;
+                   if (time_H_2==4'b1001) begin 
+                       time_H_2 <= 4'b0000;
+                       if (time_H_3==4'b0101) begin 
+                           time_H_0  <= 4'b0000;
+                           time_H_1  <= 4'b0000;
+                           time_H_2  <= 4'b0000;
+                           time_H_3  <= 4'b0000;
                        end else 
-                           time_MM <= time_MM +1'b1;
+                           time_H_3 <= time_H_3 +1'b1;
                     end else 
-                        time_M <= time_M +1'b1;
+                        time_H_2 <= time_H_2 +1'b1;
                 end else 
-                    time_SS <= time_SS+1'b1;
+                    time_H_1 <= time_H_1+1'b1;
             end else          
-                time_S <= time_S+1'b1;
+                time_H_0 <= time_H_1+1'b1;
             count <= '0;
         end          
     endtask : MM_SS
