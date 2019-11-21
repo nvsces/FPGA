@@ -66,6 +66,7 @@ always_comb begin
 end
 
 always_ff@(posedge clk)begin
+    watch_state <= watch_next;
     if (statr_time) begin
         Count_Time <= Count_Time + 1'b1;
         time_w();
@@ -117,8 +118,10 @@ always_ff@(posedge clk) begin
 end
 //---------------------------------------------------------------------------//
 task add_Hex_converTime();//переводим наше заданное время в индикаторах
-    count_min <= time_Hmin2 + 10*time_Hmin1;
-    count_ch  <= time_Hch2  + 10*time_Hch1;
+    count_min   <= time_Hmin2 + 10*time_Hmin1;
+    count_ch    <= time_Hch2  + 10*time_Hch1;
+    count_sec   <= 0;
+    count_mlsec <= 0 ;
 endtask : add_Hex_converTime
 //---------------------------------------------------------------------------//
 task add_Hex();// +1 к разряду Hex
