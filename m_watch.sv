@@ -4,7 +4,6 @@ input key_long_1,
 input key_long_2,
 input key_first_1,
 input key_first_2,
-input key_double_long,
 
 output logic next_mod,
 
@@ -21,6 +20,7 @@ logic [3:0] time_Hmin2 = 0;
 logic [3:0] time_Hmin1 = 0;
 logic [3:0] time_Hc2 = 0;
 logic [3:0] time_Hc1 = 0;
+
 
 
 logic [31:0] Count_Time  = 0;
@@ -76,19 +76,43 @@ end
 always_ff@(posedge clk) begin
     case (watch_state)
         WATCH_TIME:
-            if (key_first_1) begin
-                statr_time <= '0;
-                reset();
-            end
-            if (key_double_long)
-                next_mod <= '1;
-        WATCH_SEC: MM_SS();
+                  if (key_first_1) begin
+                      statr_time <= '0;
+                      reset();
+                  end
+                  Hex_0 <= time_Hmin2;
+                  Hex_1 <= time_Hmin1;
+                  Hex_2 <= time_Hch2;
+                  Hex_3 <= time_Hch1;
+        WATCH_SEC:
+                  Hex_0 <= time_Hm2;
+                  Hex_1 <= time_Hm1;
+                  Hex_2 <= time_Hs2;
+                  Hex_3 <= time_Hs1;
+       //------------------------------------------------------------------------------------------//           
         WATCH_SETTING:
             if (key_first_1)
                 Hex_bit <= Hex_bit + 1'b1;
             if (key_first_2)  begin
-                add_Hex();
-                case (Hex_bit)
+                add_Hex(); //+1 к Hex
+                case_Hex_bit(); //проверка на переполнение индикатора при +1 к Hex
+            end
+            if (key_long_1) begin
+                add_Hex_converTime();
+                statr_time <= 1';
+            end
+                  Hex_0 <= time_Hmin2;
+                  Hex_1 <= time_Hmin1;
+                  Hex_2 <= time_Hch2;
+                  Hex_3 <= time_Hch1;
+
+        //----------------------------------------------------------------------//
+        default: watch_next <= WATCH_TIME;
+        endcase 
+end
+
+task case_Hex_bit();
+                    case (Hex_bit)
                     2'b00:
                             if (time_Hmin2 >=10) 
                                 time_Hmin2 <= 0;
@@ -108,14 +132,7 @@ always_ff@(posedge clk) begin
                                 time_Hch1 <= 0;
                     default:Hex_bit <= 0;
                     endcase
-            end
-            if (key_long_1) begin
-                add_Hex_converTime();
-                statr_time <= 1';
-            end
-        default: watch_next <= WATCH_TIME;
-        endcase 
-end
+endtask:case_Hex_bit
 //---------------------------------------------------------------------------//
 task add_Hex_converTime();//переводим наше заданное время в индикаторах
     count_min   <= time_Hmin2 + 10*time_Hmin1;
@@ -128,8 +145,8 @@ task add_Hex();// +1 к разряду Hex
   case(Hex_bit)
   2'b00:time_Hmin2 <= time_Hmin2 + 1'b1;
   2'b01:time_Hmin1 <= time_Hmin1 + 1'b1;
-  2'b10:time_Hch2 <= time_Hch2 + 1'b1;
-  2'b11:time_Hch1 <= time_Hch1 + 1'b1;
+  2'b10:time_Hch2  <= time_Hch2  + 1'b1;
+  2'b11:time_Hch1  <= time_Hch1  + 1'b1;
   default : Hex_bit <= '0;
   endcase
 endtask :add_Hex

@@ -1,7 +1,7 @@
-module watch(
+module top_watch(
 input clk,
-input key_one_n;
-input key_two_n;
+input key_1_n;
+input key_2_n;
 
 output logic [0:3] Hex_0,
 output logic [0:3] Hex_1,
@@ -10,108 +10,72 @@ output logic [0:3] Hex_3
 
 );
 
-typedef enum logic[2:0] {MOD_WATCH, MOD_SETTING,MOD_TIMER} mode_of_operation;
+typedef enum logic[1:0] {MOD_WATCH,MOD_TIMER} mode_of_operation;
 mode_of_operation mod_state, mod_next;
-
-logic key_one_cleared;
-logic key_two_cleared;
-
-logic key_one;
-logic key_two;
 
 localparam  IN_CLK_HZ = 50_000_000;
 localparam  MM_count=IN_CLK_HZ/100;
 
-typedef enum logic[1:0] {SHOW_MM, SHOW_SS} show_t;
-show_t show_next, show_state;
+logic [3:0] H_0_state = 0;
+logic [3:0] H_1_state = 0;
+logic [3:0] H_2_state = 0;
+logic [3:0] H_3_state = 0;
 
-typedef enum logic[1:0] {WATCH_TIME, WATCH_SEC} watch_t;
-watch_t watch_next, watch_state;
+logic [3:0] H_0_W = 0;
+logic [3:0] H_1_W = 0;
+logic [3:0] H_2_W = 0;
+logic [3:0] H_3_W = 0;
 
-logic [3:0] time_H_0 = 0;
-logic [3:0] time_H_1 = 0;
-logic [3:0] time_H_2 = 0;
-logic [3:0] time_H_3 = 0;
+logic [3:0] H_0_T = 0;
+logic [3:0] H_1_T = 0;
+logic [3:0] H_2_T = 0;
+logic [3:0] H_3_T = 0;
 
-logic [3:0] H_0 = 0;
-logic [3:0] H_1 = 0;
-logic [3:0] H_2 = 0;
-logic [3:0] H_3 = 0;
+logic key_1_first='0;
+logic key_2_first='0;
 
-logic [31:0] count_key_one = 0;
-logic [31:0] count_key_two = 0;
+logic key_1_long='0;
+logic key_2_long='0;
 
-logic [31:0] COUNT_WATCH = 0;
-
-logic [1:0] Hex_bit    = '0;
-logic       start_stop = '0;
-logic flag_count_wotch = '0;
-
-localparam C_key_one = 200_000_000;
-localparam C_key_two = 200_000_000;
-
-assign key_one = ~key_one_n;
-assign key_two = ~key_two_n;
-//---------------------------------------------------------------------------------------------------------//
-always_comb begin //автомат событий для секундомера 
-	show_next = SHOW_MM;
-    case (show_state)
-    SHOW_MM:
-        if ((time_MM >=5) && (time_M >=4'b1001) && (time_SS >=4'b1001) && (time_S >=4'b1001) && (count >= MM_count))
-            show_next = SHOW_SS;
-        else
-            show_next = SHOW_MM;
-    SHOW_SS: show_next = SHOW_SS;
-    default: show_next = SHOW_MM;    
-    endcase
-end
-//----------------------------------------------------------------------------------------------------------//
-always_comb begin //автомат событий для часов 
-        watch_next = WATCH_TIME;
-        case (watch_state)
-        WATCH_TIME:      
-                if ((key_two)&&(!key_one))
-                    watch_next = WATCH_SEC;
-                else 
-                    watch_next = WATCH_TIME;
-        WATCH_SEC:
-                 if ((key_two)&&(!key_one))
-                    watch_next = WATCH_SEC;
-                else 
-                    watch_next = WATCH_TIME;         
-end
+assign key_1 = ~key_1_n;
+assign key_2 = ~key_2_n;
 //----------------------------------------------------------------------------------------------------------//
 always_comb begin //автомат событий для режимов работы
 	mod_next = MOD_WATCH;
     case (mod_state)
-        //--------------------------------------------------------------------------------------------------//
+
     MOD_WATCH:// режим часы
-        if (key_one_cleared && !key_two)begin // нажимаем на 1 кнопку
-            mod_next = MOD_SETTING;
-            flag_count_wotch = '0;
-            end
-        else if ((count_key_one >=C_key_one) && (count_key_two >= C_key_two)) begin // держим (1 и 2) кнопку 
-             mod_next = MOD_TIMER; //следующий режим секундомер
-             count_key_one ='0;
-             count_key_two ='0;
-             end          
+        if (key_1_long)begin // долгое нажатие  на 1 кнопку
+             mod_next = MOD_TIMER;                    
         else mod_next = MOD_WATCH;  //ничего не нажимаем
-        //--------------------------------------------------------------------------------------------------//
-    MOD_SETTING:// режим настройки времени 
-        if ((count_key_one >=C_key_one) && (!key_two) ) begin //держим 1 кнопку 
-                  mod_next = MOD_WATCH; //следующий режим - часы
-                  C_key_two = '0;
-                  flag_count_wotch = '1; //запускаем внутреннее время часов (COUNT_WATCH)
-        end else mod_next = MOD_SETTING; // ничего не нажимаем
-        //--------------------------------------------------------------------------------------------------//
+
     MOD_TIMER:// режим секундомер
-        if ((count_key_one >=C_key_one) && (count_key_two >= C_key_two)) begin // держим (1 и 2) кнопку 
-             mod_next = MOD_WATCH;// переход в режи часы
-             C_key_one ='0;
-             C_key_two ='0;
-        end else mod_next = MOD_TIMER; //ничего не нажимаем   
+        if (key_1_long)
+             mod_next = MOD_WATCH;
+        else mod_next = MOD_TIMER; //ничего не нажимаем   
+    
     default: mod_next = MOD_WATCH;    
     endcase
+end
+
+always_ff@(posedge clk) begin
+    mod_state <= mod_next;
+end
+
+always_ff@(posedge clk) begin
+    case (mod_state)
+    MOD_WATCH:
+              H_0_state <= H_0_W;
+              H_1_state <= H_1_W;
+              H_2_state <= H_2_W;
+              H_3_state <= H_3_W;
+    MOD_TIMER:
+              H_0_state <= H_0_T;
+              H_1_state <= H_1_T;
+              H_2_state <= H_2_T;
+              H_3_state <= H_3_T; 
+    default : mod_state <= MOD_WATCH;
+    endcase             
 end
 //---------------------------------------------------------------------------------------------------------//
 always_ff @(posedge clk )
@@ -273,57 +237,7 @@ task MM_SS();//минуты : секунды
 		key_one_cleared
 	);
 
-endmodule : watch
-
-module key_stable #(
-	IN_C_HZ = 50_000_000
-)(
-	input clk, rst,
-	
-	input in_key,
-	output out_key='0
-);
-	localparam STROBE_TIME_MS = 500;
-	localparam CNT_TH = STROBE_TIME_MS * (IN_C_HZ / 1000);
-	
-	logic[$bits(CNT_TH)-1:0] cnt='0;
-	
-    logic key, x_key;
-    logic go;
-
-    always_ff @(posedge clk or posedge rst)
-        if (rst)
-            {key, x_key} <= '0;
-        else
-            {key, x_key} <= {x_key, in_key};
-
-    always_ff @(posedge clk or posedge rst)
-        if (rst)
-            out_key <= '0;
-        else if (key && !go)
-            out_key <= '1;
-        else
-            out_key <= '0;
-
-	always_ff @(posedge clk or posedge rst)
-        if (rst) begin
-            cnt <= '0;
-            go <= '0;
-        end
-        else begin
-            if (key && !go)
-                go <= '1;
-
-            if (cnt + 1'b1 >= CNT_TH) begin
-                cnt <= '0;
-                go <= '0;
-            end
-            else if (go)
-                cnt <= cnt + 1'b1;
-        end
-		
-endmodule : key_stable
-
+endmodule : top_watch
 //------------------------------------------------------//
 module decoder (
     input[3:0] sw, //  4 bit binary input
