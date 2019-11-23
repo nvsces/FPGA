@@ -1,11 +1,10 @@
 module m_watch(
 input clk,
-input key_long_1,
-input key_long_2,
 input key_first_1,
 input key_first_2,
+input key_long_1,
+input key_long_2,
 
-output logic next_mod,
 
 output logic [0:3] Hex_0,
 output logic [0:3] Hex_1,
@@ -18,8 +17,8 @@ logic [3:0] time_Hs2 = 0;
 logic [3:0] time_Hs1 = 0;
 logic [3:0] time_Hmin2 = 0;
 logic [3:0] time_Hmin1 = 0;
-logic [3:0] time_Hc2 = 0;
-logic [3:0] time_Hc1 = 0;
+logic [3:0] time_Hch2 = 0;
+logic [3:0] time_Hch1 = 0;
 
 
 
@@ -32,35 +31,37 @@ logic [31:0] count_ch    = 0;
 logic statr_time = '0;
 logic [1:0] Hex_bit = '0;
 
-localparam  IN_CLK_HZ = 50_000_000;
+localparam  IN_CLK_HZ = 500; //вернуть на 50_000_000
 localparam  MLSec = IN_CLK_HZ/100;
 
 
 
 typedef enum logic[2:0] {WATCH_TIME, WATCH_SEC,WATCH_SETTING} watch_t;
-watch_t watch_next, watch_state;
+watch_t watch_next, watch_state = WATCH_TIME;
 
 always_comb begin 
-	watch_next = WATCH_TIME;
+    watch_next = WATCH_TIME;
     case (watch_state)
-    WATCH_TIME:
+    WATCH_TIME: begin
         if (key_first_1)
             watch_next = WATCH_SETTING;
+       else  if (key_long_2)
+            watch_next = WATCH_SEC;
+        else
+            watch_next = WATCH_TIME;
+        end
+    WATCH_SEC: begin
         if (key_long_2)
             watch_next = WATCH_SEC;
         else
             watch_next = WATCH_TIME;
-    WATCH_SEC: 
-        if (key_long_2)
-            watch_next = WATCH_SEC;
-        else
-            watch_next = WATCH_TIME;
-    WATCH_SETTING:
+        end
+    WATCH_SETTING:begin
         if (key_long_1) 
             watch_next = WATCH_TIME;
         else 
             watch_next = WATCH_SETTING;
-
+        end
     default: watch_next = WATCH_TIME;    
     endcase
 end
@@ -75,7 +76,7 @@ end
 //--------------------------------------------------------------------//
 always_ff@(posedge clk) begin
     case (watch_state)
-        WATCH_TIME:
+        WATCH_TIME:begin
                   if (key_first_1) begin
                       statr_time <= '0;
                       reset();
@@ -84,13 +85,16 @@ always_ff@(posedge clk) begin
                   Hex_1 <= time_Hmin1;
                   Hex_2 <= time_Hch2;
                   Hex_3 <= time_Hch1;
-        WATCH_SEC:
+                  end
+        WATCH_SEC:begin
                   Hex_0 <= time_Hm2;
                   Hex_1 <= time_Hm1;
                   Hex_2 <= time_Hs2;
                   Hex_3 <= time_Hs1;
+                  end
        //------------------------------------------------------------------------------------------//           
-        WATCH_SETTING:
+        WATCH_SETTING:begin
+             
             if (key_first_1)
                 Hex_bit <= Hex_bit + 1'b1;
             if (key_first_2)  begin
@@ -99,15 +103,16 @@ always_ff@(posedge clk) begin
             end
             if (key_long_1) begin
                 add_Hex_converTime();
-                statr_time <= 1';
+                statr_time <= '1;
             end
+                  time_w();
                   Hex_0 <= time_Hmin2;
                   Hex_1 <= time_Hmin1;
                   Hex_2 <= time_Hch2;
                   Hex_3 <= time_Hch1;
-
+            end
         //----------------------------------------------------------------------//
-        default: watch_next <= WATCH_TIME;
+        default: reset();
         endcase 
 end
 
@@ -119,7 +124,7 @@ task case_Hex_bit();
                     2'b01:
                             if (time_Hmin1 >=6) 
                                 time_Hmin1 <= 0;
-                    2'b10:
+                    2'b10: begin
                             if (time_Hch1 >= 2) begin 
                                 if (time_Hch2 >=4) 
                                     time_Hmin2 <= 0;
@@ -127,6 +132,7 @@ task case_Hex_bit();
                             else
                                 if (time_Hch2 >=10) 
                                     time_Hmin2 <= 0;
+                            end
                     2'b11:
                             if (time_Hch1 >= 3) 
                                 time_Hch1 <= 0;
@@ -179,14 +185,14 @@ task time_w();
     if (count_ch >=24)
         reset();
 
-    time_Hm1   <= count_mlsec % 10; // вычисление значения первой цифры в счетчике милисекунд
-    time_Hm2   <= count_mlsec/10;   // вычисление значения второй цифры в счетчике милисекунд
-    time_Hs1   <= count_sec % 10;   // вычисление значения первой цифры в счетчике секунд
-	time_Hs2   <= count_sec/10;     // вычисление значения второй цифры в счетчике секунд
-	time_Hmin1 <= count_min % 10;   // вычисление значения первой цифры в счетчике минут
-	time_Hmin2 <= count_min/10;     // вычисление значения второй цифры в счетчике минут
-    time_Hch1  <= count_ch % 10;    // вычисление значения первой цифры в счетчике часов
-	time_Hch2  <= count_ch/10;      // вычисление значения второй цифры в счетчике часов
+    time_Hm2   <= count_mlsec % 10; // вычисление значения первой цифры в счетчике милисекунд
+    time_Hm1   <= count_mlsec/10;   // вычисление значения второй цифры в счетчике милисекунд
+    time_Hs2   <= count_sec % 10;   // вычисление значения первой цифры в счетчике секунд
+	time_Hs1   <= count_sec/10;     // вычисление значения второй цифры в счетчике секунд
+	time_Hmin2 <= count_min % 10;   // вычисление значения первой цифры в счетчике минут
+	time_Hmin1 <= count_min/10;     // вычисление значения второй цифры в счетчике минут
+    time_Hch2  <= count_ch % 10;    // вычисление значения первой цифры в счетчике часов
+	time_Hch1  <= count_ch/10;      // вычисление значения второй цифры в счетчике часов
 endtask : time_w 
 //---------------------------------------------------------------------------------------------//
 endmodule : m_watch
