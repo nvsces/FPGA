@@ -6,10 +6,10 @@ input key_long_1,
 input key_long_2,
 
 
-output logic [0:3] Hex_0,
-output logic [0:3] Hex_1,
-output logic [0:3] Hex_2,
-output logic [0:3] Hex_3
+output logic [3:0] Hex_0,
+output logic [3:0] Hex_1,
+output logic [3:0] Hex_2,
+output logic [3:0] Hex_3
 );
 logic [3:0] time_Hm2 = 0;
 logic [3:0] time_Hm1 = 0;

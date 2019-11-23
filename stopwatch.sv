@@ -1,12 +1,12 @@
-module timer(
+module stopwatch(
     input clk,
     input key_start_n,
     input key_reset_n,
 
-    output logic [6:0] Hex_0,
-    output logic [6:0] Hex_1,
-    output logic [6:0] Hex_2,
-    output logic [6:0] Hex_3
+    output logic [3:0] Hex_0,
+    output logic [3:0] Hex_1,
+    output logic [3:0] Hex_2,
+    output logic [3:0] Hex_3
 );
 localparam  IN_CLK_HZ = 50_000_000;
 localparam  MM_count=IN_CLK_HZ/100;
@@ -52,6 +52,13 @@ always_ff @(posedge clk or posedge key_reset_cleared)
     else
         show_state <= show_next;
 
+
+always_ff@(posedge clk) begin
+    Hex_0 <= time_S;
+    Hex_1 <= time_SS;
+    Hex_2 <= time_M;
+    Hex_3 <= time_MM;
+end
 //----------------------------------------------------------------------------//
 always_ff @(posedge clk or posedge key_reset_cleared)
 	if (key_reset_cleared) begin
@@ -126,26 +133,6 @@ task MM_SS();
         end          
     endtask : MM_SS
     //---------------------------------------------------------------------------//
-
-    decoder D_S(
-      .sw(time_S), //  4 bit binary input
-	  .led(Hex_0)  //  16-bit out 
-    );
-    decoder D_SS(
-        .sw(time_SS), //  4 bit binary input
-		.led(Hex_1)  //  16-bit out 
-    );
-	 
-     decoder D_M(
-        .sw(time_M), //  4 bit binary input
-		.led(Hex_2)  //  16-bit out 
-    );
-	 
-    decoder D_MM(
-        .sw(time_MM), //  4 bit binary input
-		.led(Hex_3)  //  16-bit out 
-    );
-
     key_stable key_str(
 		clk,
         key_reset,
@@ -161,7 +148,7 @@ task MM_SS();
 	);
 	 
 //------------------------------------------------------------------------//
-endmodule :timer
+endmodule :stopwatch
 //-----------------------------------------------------------------------//
 module key_stable #(
 	IN_C_HZ = 50_000_000
@@ -213,25 +200,3 @@ module key_stable #(
 endmodule : key_stable
 
 //------------------------------------------------------//
-module decoder (
-    input[3:0] sw, //  4 bit binary input
-
-    output logic[6:0] led  //  16-bit out 
-);
-
-	always_comb
-		 case (sw)         
-			4'b0001 : led <= 7'b1111001;//1     7'1111001;
-			4'b0010 : led <= 7'b0100100;//2		7'0100100;
-			4'b0011 : led <= 7'b0110000;//3		7'0110000;
-			4'b0100 : led <= 7'b0011001;//4		7'0011001;
-			4'b0101 : led <= 7'b0010010;//5		7'0010010;
-			4'b0110 : led <= 7'b0000010;//6		7'0000010;
-			4'b0111 : led <= 7'b1111000;//7		7'1111000;
-			4'b1000 : led <= 7'b0000000;//8		7'0000000;
-			4'b1001 : led <= 7'b0010000;//9		7'0010000;
-			4'b0000 : led <= 7'b1000000;//0		7'1000000;
-			default : led <= 7'b1000000;
-		 endcase
-
-endmodule:decoder
