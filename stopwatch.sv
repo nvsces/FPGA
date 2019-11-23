@@ -1,7 +1,7 @@
 module stopwatch(
     input clk,
-    input key_start_n,
-    input key_reset_n,
+    input key_start,
+    input key_reset,
 
     output logic [3:0] Hex_0,
     output logic [3:0] Hex_1,
@@ -15,12 +15,6 @@ typedef enum logic[1:0] {SHOW_MM, SHOW_SS} show_t;
 
 show_t show_next, show_state;
 
-logic key_reset_cleared;
-logic key_start_cleared;
-
-logic key_start;
-logic key_reset;
-
 logic [25:0] count = 1;
 
 logic start_stop ='0;
@@ -29,9 +23,6 @@ logic [3:0] time_S  =0;
 logic [3:0] time_SS =0;
 logic [3:0] time_M  =0;
 logic [3:0] time_MM =0;
-
-assign key_reset = ~key_reset_n;
-assign key_start = ~key_start_n;
 
 always_comb begin
 	show_next = SHOW_MM;
@@ -46,8 +37,8 @@ always_comb begin
     endcase
 end
 
-always_ff @(posedge clk or posedge key_reset_cleared)
-    if (key_reset_cleared)
+always_ff @(posedge clk or posedge key_reset)
+    if (key_reset)
         show_state <= SHOW_MM;
     else
         show_state <= show_next;
@@ -60,8 +51,8 @@ always_ff@(posedge clk) begin
     Hex_3 <= time_MM;
 end
 //----------------------------------------------------------------------------//
-always_ff @(posedge clk or posedge key_reset_cleared)
-	if (key_reset_cleared) begin
+always_ff @(posedge clk or posedge key_reset)
+	if (key_reset) begin
         time_S  <= 0;
         time_SS <= 0;
         time_M  <= 0;
@@ -69,7 +60,7 @@ always_ff @(posedge clk or posedge key_reset_cleared)
         start_stop <= '0;
 	end
 	else begin
-        if (key_start_cleared) 
+        if (key_start) 
             start_stop <= ~start_stop;                  
         
         if (start_stop)                
@@ -132,21 +123,7 @@ task MM_SS();
             count <= '0;
         end          
     endtask : MM_SS
-    //---------------------------------------------------------------------------//
-    key_stable key_str(
-		clk,
-        key_reset,
-		key_start,
-		key_start_cleared
-	);
-
-    key_stable key_rst(
-		clk,
-        1'b0,
-		key_reset,
-		key_reset_cleared
-	);
-	 
+    //---------------------------------------------------------------------------//	 
 //------------------------------------------------------------------------//
 endmodule :stopwatch
 //-----------------------------------------------------------------------//
