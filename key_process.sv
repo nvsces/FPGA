@@ -19,6 +19,12 @@ always_ff @(posedge clk)
             key <= in_key;
 
 always_ff @(posedge clk) begin
+    if (cnt >= CNT_key) begin
+        out_key_long <= '1;
+        go  <= '1;
+        cnt <= '0;
+    end
+    else out_key_long <= '0;
     if (in_key && !go)
         cnt <= cnt + 1'b1;
     else 
@@ -26,14 +32,7 @@ always_ff @(posedge clk) begin
     if (!out_key_long && !in_key)
         go <= '0;
 end
-always_ff @(posedge clk) 
-    if (cnt >= CNT_key) begin
-        out_key_long <= '1;
-        go  <= '1;
-        cnt <= '0;
-    end
-    else 
-        out_key_long <= '0;
+    
 
 always_ff@(posedge clk)
         if (!in_key && key && !go)

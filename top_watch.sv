@@ -1,7 +1,7 @@
 module top_watch(
 input clk,
-input key_1_n;
-input key_2_n;
+input key_1_n,
+input key_2_n,
 
 output logic [6:0] Hex_0,
 output logic [6:0] Hex_1,
@@ -42,12 +42,12 @@ always_comb begin //автомат событий для режимов рабо
     case (mod_state)
 
     MOD_WATCH:// режим часы
-        if (key_1_long)begin // долгое нажатие  на 1 кнопку
+        if (key_long_1) // долгое нажатие  на 1 кнопку
              mod_next = MOD_STOPWATCH;                    
         else mod_next = MOD_WATCH;  //ничего не нажимаем
 
-    MOD_TIMER:// режим секундомер
-        if (key_1_long)
+    MOD_STOPWATCH:// режим секундомер
+        if (key_long_1)
              mod_next = MOD_WATCH;
         else mod_next = MOD_STOPWATCH; //ничего не нажимаем   
     
@@ -60,6 +60,7 @@ always_ff@(posedge clk) begin
           MOD_WATCH: dsp_Hex <= '1;
       MOD_STOPWATCH: dsp_Hex <= '0;
            default : dsp_Hex <= '1;
+			  endcase
 end
 
 always_ff@(posedge clk) begin

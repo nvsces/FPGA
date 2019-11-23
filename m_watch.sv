@@ -11,14 +11,14 @@ output logic [3:0] Hex_1,
 output logic [3:0] Hex_2,
 output logic [3:0] Hex_3
 );
-logic [3:0] time_Hm2 = 0;
-logic [3:0] time_Hm1 = 0;
-logic [3:0] time_Hs2 = 0;
-logic [3:0] time_Hs1 = 0;
-logic [3:0] time_Hmin2 = 0;
-logic [3:0] time_Hmin1 = 0;
-logic [3:0] time_Hch2 = 0;
-logic [3:0] time_Hch1 = 0;
+logic [3:0] time_Hm2 = '0;
+logic [3:0] time_Hm1 = '0;
+logic [3:0] time_Hs2 = '0;
+logic [3:0] time_Hs1 = '0;
+logic [3:0] time_Hmin2 = '0;
+logic [3:0] time_Hmin1 = '0;
+logic [3:0] time_Hch2 = '0;
+logic [3:0] time_Hch1 = '0;
 
 
 
@@ -31,13 +31,13 @@ logic [31:0] count_ch    = 0;
 logic statr_time = '0;
 logic [1:0] Hex_bit = '0;
 
-localparam  IN_CLK_HZ = 500; //вернуть на 50_000_000
+localparam  IN_CLK_HZ = 50_000_000; //вернуть на 50_000_000
 localparam  MLSec = IN_CLK_HZ/100;
 
 
 
 typedef enum logic[2:0] {WATCH_TIME, WATCH_SEC,WATCH_SETTING} watch_t;
-watch_t watch_next, watch_state = WATCH_TIME;
+watch_t watch_next, watch_state;
 
 always_comb begin 
     watch_next = WATCH_TIME;
@@ -67,26 +67,28 @@ always_comb begin
 end
 
 always_ff@(posedge clk)begin
-    watch_state <= watch_next;
-    if (statr_time) begin
-        Count_Time <= Count_Time + 1'b1;
-        time_w();
-    end
+    watch_state <= watch_next;   
 end
 //--------------------------------------------------------------------//
 always_ff@(posedge clk) begin
+    if (statr_time) 
+        Count_Time <= Count_Time + 1'b1;
+    else Count_Time <= 0;
+    time_w();
     case (watch_state)
         WATCH_TIME:begin
                   if (key_first_1) begin
                       statr_time <= '0;
                       reset();
                   end
+                 // time_w();
                   Hex_0 <= time_Hmin2;
                   Hex_1 <= time_Hmin1;
                   Hex_2 <= time_Hch2;
                   Hex_3 <= time_Hch1;
                   end
         WATCH_SEC:begin
+                 // time_w();
                   Hex_0 <= time_Hm2;
                   Hex_1 <= time_Hm1;
                   Hex_2 <= time_Hs2;
@@ -105,7 +107,7 @@ always_ff@(posedge clk) begin
                 add_Hex_converTime();
                 statr_time <= '1;
             end
-                  time_w();
+                  //time_w();
                   Hex_0 <= time_Hmin2;
                   Hex_1 <= time_Hmin1;
                   Hex_2 <= time_Hch2;
@@ -116,7 +118,7 @@ always_ff@(posedge clk) begin
         endcase 
 end
 
-task case_Hex_bit();
+task case_Hex_bit(); 
                     case (Hex_bit)
                     2'b00:
                             if (time_Hmin2 >=10) 
@@ -158,7 +160,7 @@ task add_Hex();// +1 к разряду Hex
 endtask :add_Hex
 //--------------------------------------------------------------------------//
 task reset();
-    Count_Time  <= 0;
+   // Count_Time  <= 0;
     count_mlsec <= 0;
     count_sec   <= 0;
     count_min   <= 0;
