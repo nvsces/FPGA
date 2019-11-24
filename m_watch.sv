@@ -5,6 +5,11 @@ input key_first_2,
 input key_long_1,
 input key_long_2,
 
+output logic led_point=0,
+
+output logic led_setting=0;
+
+output logic [1:0] Hex_bit = '0;
 
 output logic [3:0] Hex_0,
 output logic [3:0] Hex_1,
@@ -23,15 +28,21 @@ logic [3:0] time_Hch1 = '0;
 
 
 logic [31:0] Count_Time  = 0;
+
+logic [31:0] cnt_led =0;
+
+
+
 logic [31:0] count_mlsec = 0;
 logic [31:0] count_sec   = 0;
 logic [31:0] count_min   = 0;
 logic [31:0] count_ch    = 0;
 
 logic statr_time = '0;
-logic [1:0] Hex_bit = '0;
+logic led_Bit = 0;
 
-localparam  IN_CLK_HZ = 50_000_000; //вернуть на 50_000_000
+localparam  t_point=25;
+localparam  IN_CLK_HZ = 500; //вернуть на 50_000_000
 localparam  MLSec = IN_CLK_HZ/100;
 
 
@@ -77,9 +88,11 @@ always_ff@(posedge clk) begin
     time_w();
     case (watch_state)
         WATCH_TIME:begin
+                  led_setting <= '0;
                   if (key_first_1) begin
                       statr_time <= '0;
                       reset();
+                      Hex_bit <= '0;
                   end
                  // time_w();
                   Hex_0 <= time_Hmin2;
@@ -89,6 +102,7 @@ always_ff@(posedge clk) begin
                   end
         WATCH_SEC:begin
                  // time_w();
+                  led_setting <= '0;
                   Hex_0 <= time_Hm2;
                   Hex_1 <= time_Hm1;
                   Hex_2 <= time_Hs2;
@@ -96,7 +110,7 @@ always_ff@(posedge clk) begin
                   end
        //------------------------------------------------------------------------------------------//           
         WATCH_SETTING:begin
-             
+            led_setting <= '1;
             if (key_first_1)
                 Hex_bit <= Hex_bit + 1'b1;
             if (key_first_2)  begin
@@ -171,9 +185,12 @@ task time_w();
     if (Count_Time >= MLSec) begin
         count_mlsec <= count_mlsec + 1'b1;
         Count_Time <= 0;
+        if(count_mlsec >= t_point)
+            led_point <= '0;
     end
     if (count_mlsec >= 100 ) begin
         count_sec <= count_sec + 1'b1;
+        led_point <= '1;
         count_mlsec <= 0;
     end
     if (count_sec >= 60) begin
@@ -196,5 +213,6 @@ task time_w();
     time_Hch2  <= count_ch % 10;    // вычисление значения первой цифры в счетчике часов
 	time_Hch1  <= count_ch/10;      // вычисление значения второй цифры в счетчике часов
 endtask : time_w 
+//---------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------//
 endmodule : m_watch

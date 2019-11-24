@@ -6,7 +6,9 @@ input key_2_n,
 output logic [6:0] Hex_0,
 output logic [6:0] Hex_1,
 output logic [6:0] Hex_2,
-output logic [6:0] Hex_3
+output logic [6:0] Hex_3,
+
+output led
 
 );
 
@@ -15,6 +17,10 @@ mode_of_operation mod_state, mod_next;
 
 localparam  IN_CLK_HZ = 50_000_000;
 localparam  MM_count=IN_CLK_HZ/100;
+
+logic led_setting=0;
+logic led_point=0;
+logic [1:0] Hex_bit=0;
 
 logic [3:0] H_0_W = 0;
 logic [3:0] H_1_W = 0;
@@ -27,6 +33,7 @@ logic [3:0] H_2_T = 0;
 logic [3:0] H_3_T = 0;
 
 logic dsp_Hex = '0;
+
 
 logic key_first_1='0;
 logic key_first_2='0;
@@ -75,6 +82,9 @@ end
         .key_first_2(key_first_2),
         .key_long_1(key_long_1),
         .key_long_2(key_long_2),
+        .led_point(led_point),
+        .led_setting(led_setting),
+        .Hex_bit(Hex_bit),
         .Hex_0(H_0_W),
         .Hex_1(H_1_W),
         .Hex_2(H_2_W),
@@ -96,10 +106,14 @@ end
         .H_3_T(H_3_T),
 
         .dsp_Hex(dsp_Hex),
+        .Hex_bit(Hex_bit),
+        .led_point(led_point),
+        .led_setting(led_setting),
         .Hex_0(Hex_0),
         .Hex_1(Hex_1),
         .Hex_2(Hex_2),
-        .Hex_3(Hex_3)
+        .Hex_3(Hex_3),
+        .led(led)
     
     );
     key_process k1(
