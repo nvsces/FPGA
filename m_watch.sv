@@ -1,5 +1,7 @@
 module m_watch(
 input clk,
+input mod,//если 1 значит режим часов
+
 input key_first_1,
 input key_first_2,
 input key_long_1,
@@ -15,6 +17,7 @@ output logic [3:0] Hex_0,
 output logic [3:0] Hex_1,
 output logic [3:0] Hex_2,
 output logic [3:0] Hex_3
+
 );
 logic [3:0] time_Hm2 = '0;
 logic [3:0] time_Hm1 = '0;
@@ -30,8 +33,6 @@ logic [3:0] time_Hch1 = '0;
 logic [31:0] Count_Time  = 0;
 
 logic [31:0] cnt_led =0;
-
-
 
 logic [31:0] count_mlsec = 0;
 logic [31:0] count_sec   = 0;
@@ -78,10 +79,12 @@ always_comb begin
 end
 
 always_ff@(posedge clk)begin
-    watch_state <= watch_next;   
+    if (mod)
+        watch_state <= watch_next;   
 end
 //--------------------------------------------------------------------//
 always_ff@(posedge clk) begin
+if (mod)begin
     if (statr_time) 
         Count_Time <= Count_Time + 1'b1;
     else Count_Time <= 0;
@@ -130,8 +133,8 @@ always_ff@(posedge clk) begin
         //----------------------------------------------------------------------//
         default: reset();
         endcase 
+    end
 end
-
 task case_Hex_bit(); 
                     case (Hex_bit)
                     2'b00:

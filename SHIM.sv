@@ -23,13 +23,14 @@ output logic led_green_7,
 output logic led_green_8
 );
 
-logic [31:0] cn_true=0;
-logic [31:0] Count=0;
 localparam IN_HZ=50_000_000;
 localparam time_led=IN_HZ*5;
 localparam etalon=time_led/10; ///25_500_000
-//localparam etalon=2_500;
-logic [31:0] fraction =0;
+
+logic [$bits(etalon)-1:0] cn_true=0;
+logic [$bits(etalon)-1:0] Count=0;
+logic [$bits(etalon)-1:0] fraction =0;
+
 logic flag=1;
 
 always_ff@(posedge clk) begin
@@ -85,7 +86,7 @@ task Led();
         cn_true  <= cn_true -(etalon/10);
         fraction <= etalon - cn_true;
     end
-endtask:Red
+endtask:Led
 //-------------------------------------//
 task trueGreen();
     led_green_1 <= '1;

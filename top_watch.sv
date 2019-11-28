@@ -78,6 +78,7 @@ end
 //---------------------------------------------------------------------------------------------------------//
     m_watch M1(
         .clk(clk),
+        .mod(dsp_Hex),
         .key_first_1(key_first_1),
         .key_first_2(key_first_2),
         .key_long_1(key_long_1),
@@ -90,7 +91,7 @@ end
         .Hex_2(H_2_W),
         .Hex_3(H_3_W),
     );
-    stopwatch M2(clk,key_first_2,key_first_1,H_0_T,H_1_T,H_2_T,H_3_T);
+    stopwatch M2(clk,dsp_Hex,key_first_2,key_first_1,H_0_T,H_1_T,H_2_T,H_3_T);
 
     display_hex M3(
         .clk(clk),

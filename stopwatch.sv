@@ -1,5 +1,6 @@
 module stopwatch(
     input clk,
+    input mod, //если 0 значит режим секундомера
     input key_start,
     input key_reset,
 
@@ -38,41 +39,45 @@ always_comb begin
 end
 
 always_ff @(posedge clk or posedge key_reset)
-    if (key_reset)
-        show_state <= SHOW_MM;
-    else
-        show_state <= show_next;
-
-
-always_ff@(posedge clk) begin
-    Hex_0 <= time_S;
-    Hex_1 <= time_SS;
-    Hex_2 <= time_M;
-    Hex_3 <= time_MM;
-end
-//----------------------------------------------------------------------------//
-always_ff @(posedge clk or posedge key_reset)
-	if (key_reset) begin
-        time_S  <= 0;
-        time_SS <= 0;
-        time_M  <= 0;
-        time_MM <= 0;   
-        start_stop <= '0;
-	end
-	else begin
-        if (key_start) 
-            start_stop <= ~start_stop;                  
-        
-        if (start_stop)                
-            count <= count +1'b1;
-
-        case (show_state)
-        SHOW_MM: SS_MM();
-        SHOW_SS: MM_SS();
-        default: MM_SS();
-        endcase                             
+    if (!mod) begin
+        if (key_reset)
+            show_state <= SHOW_MM;
+        else
+            show_state <= show_next;
     end
 
+always_ff@(posedge clk) begin
+    if(!mod) begin
+        Hex_0 <= time_S;
+        Hex_1 <= time_SS;
+        Hex_2 <= time_M;
+        Hex_3 <= time_MM;
+    end
+end    
+//----------------------------------------------------------------------------//
+always_ff @(posedge clk or posedge key_reset)
+    if(!mod) begin
+        if (key_reset) begin
+            time_S  <= 0;
+            time_SS <= 0;
+            time_M  <= 0;
+            time_MM <= 0;   
+            start_stop <= '0;
+        end
+        else begin
+            if (key_start) 
+                start_stop <= ~start_stop;                  
+            
+            if (start_stop)                
+                count <= count +1'b1;
+
+            case (show_state)
+            SHOW_MM: SS_MM();
+            SHOW_SS: MM_SS();
+            default: MM_SS();
+            endcase                             
+        end
+    end
 //-------------------------------------------------------------------------//
 task SS_MM();
        if (count >= MM_count) begin                        
@@ -126,54 +131,3 @@ task MM_SS();
     //---------------------------------------------------------------------------//	 
 //------------------------------------------------------------------------//
 endmodule :stopwatch
-//-----------------------------------------------------------------------//
-module key_stable #(
-	IN_C_HZ = 50_000_000
-)(
-	input clk, rst,
-	
-	input in_key,
-	output out_key='0
-);
-	localparam STROBE_TIME_MS = 500;
-	localparam CNT_TH = STROBE_TIME_MS * (IN_C_HZ / 1000);
-	
-	logic[$bits(CNT_TH)-1:0] cnt='0;
-	
-    logic key, x_key;
-    logic go;
-
-    always_ff @(posedge clk or posedge rst)
-        if (rst)
-            {key, x_key} <= '0;
-        else
-            {key, x_key} <= {x_key, in_key};
-
-    always_ff @(posedge clk or posedge rst)
-        if (rst)
-            out_key <= '0;
-        else if (key && !go)
-            out_key <= '1;
-        else
-            out_key <= '0;
-
-	always_ff @(posedge clk or posedge rst)
-        if (rst) begin
-            cnt <= '0;
-            go <= '0;
-        end
-        else begin
-            if (key && !go)
-                go <= '1;
-
-            if (cnt + 1'b1 >= CNT_TH) begin
-                cnt <= '0;
-                go <= '0;
-            end
-            else if (go)
-                cnt <= cnt + 1'b1;
-        end
-		
-endmodule : key_stable
-
-//------------------------------------------------------//
