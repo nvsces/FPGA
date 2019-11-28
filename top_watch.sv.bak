@@ -95,21 +95,7 @@ end
 
 
 //---------------------------------------------------------------------------------------------------------//
-	    stopwatch M2(
-        .clk(clk),
-       
-        .key_start(key_first_2),
-        .key_reset(key_first_1),
-
-        .mod(dsp_Hex),
-        .Hex_0(H_0_T),
-        .Hex_1(H_1_T),
-        .Hex_2(H_2_T),
-        .Hex_3(H_3_T)
-        );
-        
-        
-	
+   //gyyyyyyyyyyyyyyyyyyyy//
     m_watch M1(
         .clk(clk),
         .mod(dsp_Hex),
@@ -123,9 +109,10 @@ end
         .Hex_0(H_0_W),
         .Hex_1(H_1_W),
         .Hex_2(H_2_W),
-        .Hex_3(H_3_W)
+        .Hex_3(H_3_W),
     );
-    //stopwatch M2(clk,key_first_2,key_first_1,H_0_T,H_1_T,H_2_T,H_3_T);
+    stopwatch M2(clk,dsp_Hex,key_first_2,key_first_1,H_0_T,H_1_T,H_2_T,H_3_T);
+
     display_hex M3(
         .clk(clk),
 
@@ -147,7 +134,8 @@ end
         .Hex_1(Hex_1),
         .Hex_2(Hex_2),
         .Hex_3(Hex_3),
-        .led(led)    
+        .led(led)
+    
     );
     key_process k1(
         clk,
@@ -185,9 +173,8 @@ end
         .led_green_5(led_green_5),
         .led_green_6(led_green_6),
         .led_green_7(led_green_7),
-        .led_green_8(led_green_8)
-    );
-
+        .led_green_8(led_green_8),
+    )
   /*  key_stable key_str(
 		clk,
         key_one,

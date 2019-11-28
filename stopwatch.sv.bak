@@ -41,7 +41,7 @@ always_comb begin
 end
 
 always_ff @(posedge clk or posedge key_reset)
-        if (key_reset )
+        if (key_reset && !mod)
             show_state <= SHOW_MM;
         else
             show_state <= show_next;
@@ -63,7 +63,7 @@ always_ff @(posedge clk or posedge key_reset) begin
             start_stop <= '0;
         end
         else begin
-            if (key_start && !mod) 
+            if (key_start) 
                 start_stop <= ~start_stop;                  
             
             if (start_stop)                

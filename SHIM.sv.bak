@@ -1,6 +1,6 @@
 module SHIM(
 input clk,
-input dsp_Hex,
+input dsp_Hex='0,
 
 output logic led_red_1,
 output logic led_red_2, 

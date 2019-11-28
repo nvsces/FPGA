@@ -26,37 +26,18 @@ always_ff @(posedge clk)
     else
         key <= '0;
 
-always_ff @(posedge clk) begin
-    if (in_key)
-        cnt <= cnt + 1'b1;
-    else 
-        cnt <= '0;
-end
 always_ff @(posedge clk) 
-    if (cnt >= CNT_key && key) begin
+    if (cnt >= CNT_key && key)
         flag_out_key_long <= '1;
-    end
     else 
         flag_out_key_long <= '0;
 
-always_ff@(posedge clk)
-        if (!in_key && key && flag_out_key_long) begin
-            out_key_long <= '1;
-            go_stable <='1;
-        end
-        else
-            out_key_long <= '0;
+always_ff@(posedge clk) begin
+        if (in_key)
+            cnt <= cnt + 1'b1;
+        else 
+            cnt <= '0;
 
-
-always_ff@(posedge clk)
-    if (cnt_stable + 1'b1 >= CNT_TH) begin
-                cnt_stable <= '0;
-                go_stable <= '0;
-            end
-            else if (go_stable)
-                cnt_stable <= cnt_stable + 1'b1;
-
-always_ff@(posedge clk)
         if (!in_key && key && !flag_out_key_long) begin
             out_key_first <= '1;
             cnt <= '0;
@@ -64,4 +45,21 @@ always_ff@(posedge clk)
         end
         else
             out_key_first <= '0;
+
+        if (!in_key && key && flag_out_key_long) begin
+            out_key_long <= '1;
+            go_stable <='1;
+        end
+        else
+            out_key_long <= '0;
+
+    if (cnt_stable + 1'b1 >= CNT_TH) begin
+                cnt_stable <= '0;
+                go_stable <= '0;
+            end
+    else if (go_stable)
+                cnt_stable <= cnt_stable + 1'b1;    
+        
+end
+
 endmodule:key_process

@@ -78,7 +78,7 @@ always_comb begin
     endcase
 end
 
-always_ff@(posedge clk)
+always_ff@(posedge clk)begin
         watch_state <= watch_next;   
 //--------------------------------------------------------------------//
 always_ff@(posedge clk) begin
